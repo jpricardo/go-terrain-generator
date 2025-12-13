@@ -85,38 +85,6 @@ type ApplyOptions struct {
 	opacity    float64
 }
 
-func (t *Terrain) applyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
-	terrainSize := len(*t)
-	textureSize := len(texture)
-
-	if textureSize <= 0 {
-		return nil, errors.New("invalid texture size")
-	}
-
-	fmt.Printf("[TEXTURE] Applying %dx%d elevation texture to %dx%d terrain...\n", textureSize, textureSize, terrainSize, terrainSize)
-
-	p := terrainSize / textureSize
-	for x := range terrainSize {
-		row := (*t)[x]
-
-		for y := range row {
-			c := row[y].elevation
-
-			lx := int(math.Min(float64(x/p), float64(textureSize-1)))
-			ly := int(math.Min(float64(y/p), float64(textureSize-1)))
-
-			te := texture[lx][ly]
-			td := 1 - float64(c)/float64(te)
-			tc := td * float64(te) * opts.smoothness * opts.opacity
-			e := float64(c) + tc
-
-			row[y].elevation = uint8(math.Min(e, float64(maxElevation)))
-		}
-	}
-
-	return *t, nil
-}
-
 func (t *Texture) toBitmap() *image.Gray {
 	size := len(*t)
 	img := image.NewGray(image.Rect(0, 0, size, size))
