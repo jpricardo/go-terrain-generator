@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"image"
 	"math"
 	"math/rand/v2"
 	"slices"
@@ -29,7 +30,7 @@ func (t *Texture) whiteNoise(opts TextureOptions) (Texture, error) {
 		texture = append(texture, make([]uint8, opts.size))
 
 		for y := range opts.size {
-			r := uint8(rand.Uint64() % 256)
+			r := uint8(rand.Uint64()%255) + 1
 			wd := 1 - float64(r)/float64(opts.baseLine)
 			wc := wd * float64(opts.baseLine) * math.Pow(opts.smoothness, 2)
 			e := float64(r) + wc
@@ -43,6 +44,7 @@ func (t *Texture) whiteNoise(opts TextureOptions) (Texture, error) {
 
 type MergeOptions struct {
 	smoothness float64
+	opacity    float64
 }
 
 func (t *Texture) merge(textures []Texture, opts MergeOptions) (Texture, error) {
@@ -67,9 +69,10 @@ func (t *Texture) merge(textures []Texture, opts MergeOptions) (Texture, error) 
 
 				v := texture[tx][ty]
 				d := 1 - float64(c)/float64(v)
-				vc := d * float64(v) * opts.smoothness
+				vc := d * float64(v) * opts.smoothness * opts.opacity
+				nv := uint8(float64(c) + vc)
 
-				(*t)[x][y] = uint8(float64(c) + vc)
+				(*t)[x][y] = nv
 			}
 		}
 	}
@@ -77,7 +80,12 @@ func (t *Texture) merge(textures []Texture, opts MergeOptions) (Texture, error) 
 	return *t, nil
 }
 
-func (t *Terrain) applyElevation(texture Texture, opts ElevationOptions) (Terrain, error) {
+type ApplyOptions struct {
+	smoothness float64
+	opacity    float64
+}
+
+func (t *Terrain) applyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
 	terrainSize := len(*t)
 	textureSize := len(texture)
 
@@ -99,7 +107,7 @@ func (t *Terrain) applyElevation(texture Texture, opts ElevationOptions) (Terrai
 
 			te := texture[lx][ly]
 			td := 1 - float64(c)/float64(te)
-			tc := td * float64(te) * opts.smoothness
+			tc := td * float64(te) * opts.smoothness * opts.opacity
 			e := float64(c) + tc
 
 			row[y].elevation = uint8(math.Min(e, float64(maxElevation)))

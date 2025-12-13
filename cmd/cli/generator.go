@@ -16,7 +16,7 @@ type Point struct {
 const (
 	waterLevel   = uint8(64)
 	maxElevation = uint8(255)
-	lowResRatio  = float64(0.25)
+	lowResRatio  = float64(0.125)
 )
 
 func (t *Terrain) new(size int) Terrain {
@@ -26,7 +26,7 @@ func (t *Terrain) new(size int) Terrain {
 		terrain = append(terrain, make([]*Point, size))
 
 		for y := range size {
-			terrain[x][y] = &Point{}
+			terrain[x][y] = &Point{elevation: waterLevel}
 		}
 	}
 
@@ -48,10 +48,13 @@ func (t *Terrain) generateElevation(opts ElevationOptions) (Terrain, error) {
 	for p := 1; p <= passes; p++ {
 		ls := float64(p) / lowResRatio
 		nt, _ := texture.whiteNoise(TextureOptions{size: int(ls), smoothness: opts.smoothness, baseLine: waterLevel})
-		et, _ = et.merge([]Texture{nt}, MergeOptions{smoothness: math.Pow(opts.smoothness, 8)})
+		et, _ = et.merge([]Texture{nt}, MergeOptions{smoothness: math.Pow(opts.smoothness, float64(p/passes)), opacity: math.Pow(.25, float64(passes/p))})
+
+		img := et.toBitmap()
+		saveBmp(img, fmt.Sprintf("elevation_texture_%d.png", p))
 	}
 
-	nt, _ := t.applyElevation(et, opts)
+	nt, _ := t.applyElevation(et, ApplyOptions{smoothness: opts.smoothness, opacity: opts.smoothness})
 	return nt, nil
 }
 
@@ -64,7 +67,7 @@ func generateTerrain(size int) (Terrain, error) {
 
 	var terrain Terrain
 	terrain = terrain.new(size)
-	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: 0.75})
+	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: .5})
 	if err != nil {
 		return nil, err
 	}
