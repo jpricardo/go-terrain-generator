@@ -2,14 +2,11 @@ package main
 
 import (
 	"fmt"
-	"image/png"
 	"log"
-	"os"
 )
 
 const (
 	maxSize        = 2048
-	outputDir      = "./cmd/output/"
 	outputFileName = "output_grayscale.png"
 )
 
@@ -22,16 +19,7 @@ func main() {
 	}
 
 	img := terrain.toBitmap()
-
-	f, err := os.Create(fmt.Sprintf("%s%s", outputDir, outputFileName))
-	if err != nil {
-		log.Panic(err)
-	}
-	defer f.Close()
-
-	if err := png.Encode(f, img); err != nil {
-		log.Panic(err)
-	}
+	saveBmp(img, outputFileName)
 
 	fmt.Println("Terrain map generated succesfully!")
 }

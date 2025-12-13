@@ -108,3 +108,17 @@ func (t *Terrain) applyElevation(texture Texture, opts ElevationOptions) (Terrai
 
 	return *t, nil
 }
+
+func (t *Texture) toBitmap() *image.Gray {
+	size := len(*t)
+	img := image.NewGray(image.Rect(0, 0, size, size))
+
+	for y := range size {
+		for x := range size {
+			offset := (y * img.Stride) + x
+			img.Pix[offset] = (*t)[y][x]
+		}
+	}
+
+	return img
+}
