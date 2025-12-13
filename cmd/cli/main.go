@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	maxSize        = 256
+	maxSize        = 2048
 	outputDir      = "./cmd/output/"
 	outputFileName = "output_grayscale.png"
 )
 
 func main() {
-	size := 256
+	size := 512
 
 	terrain, err := generateTerrain(size)
 	if err != nil {

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"math"
+	"math/rand/v2"
 )
 
 type Terrain [][]*Point
@@ -13,7 +15,8 @@ type Point struct {
 }
 
 const (
-	waterLevel = uint8(64)
+	waterLevel   = uint8(64)
+	maxElevation = uint8(255)
 )
 
 func initializeTerrain(size int) Terrain {
@@ -30,17 +33,31 @@ func initializeTerrain(size int) Terrain {
 	return terrain
 }
 
-func (t *Terrain) generateElevation() Terrain {
+type ElevationOptions struct {
+	smoothness float64
+}
+
+func (t *Terrain) generateElevation(opts ElevationOptions) (Terrain, error) {
+	if opts.smoothness > 1 || opts.smoothness < 0 {
+		return nil, errors.New("invalid smoothness value")
+	}
+
+	fmt.Printf("Generating elevation with %+v\n", opts)
+
 	for x := range *t {
 		row := (*t)[x]
 
 		for y := range row {
-			point := row[y]
-			point.elevation = waterLevel
+			r := uint8(rand.Uint64() % 256)
+			d := 1 - float64(r)/float64(waterLevel)
+			c := d * float64(waterLevel) * opts.smoothness
+			e := float64(r) + c
+
+			row[y].elevation = uint8((math.Min(e, float64(maxElevation))))
 		}
 	}
 
-	return *t
+	return *t, nil
 }
 
 func generateTerrain(size int) (Terrain, error) {
@@ -51,7 +68,10 @@ func generateTerrain(size int) (Terrain, error) {
 	fmt.Printf("Generating %dx%d terrain map...\n", size, size)
 
 	terrain := initializeTerrain(size)
-	terrain = terrain.generateElevation()
+	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: 0.5})
+	if err != nil {
+		return nil, err
+	}
 
 	return terrain, nil
 }
