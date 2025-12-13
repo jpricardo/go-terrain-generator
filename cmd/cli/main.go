@@ -14,7 +14,7 @@ const (
 )
 
 func main() {
-	size := 512
+	size := 1024
 
 	terrain, err := generateTerrain(size)
 	if err != nil {

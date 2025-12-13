@@ -17,6 +17,7 @@ type Point struct {
 const (
 	waterLevel   = uint8(64)
 	maxElevation = uint8(255)
+	lowResRatio  = float64(0.25)
 )
 
 func initializeTerrain(size int) Terrain {
@@ -37,27 +38,79 @@ type ElevationOptions struct {
 	smoothness float64
 }
 
-func (t *Terrain) generateElevation(opts ElevationOptions) (Terrain, error) {
+func (t *Terrain) applyLayer(layer Terrain, opts ElevationOptions) (Terrain, error) {
+	ts := len(*t)
+	ls := len(layer)
+
+	if len(layer) <= 0 {
+		return nil, errors.New("invalid layer size")
+	}
+
+	fmt.Printf("Applying %dx%d layer to %dx%d terrain...\n", ls, ls, ts, ts)
+
+	p := ts / ls
+	for x := range ts {
+		row := (*t)[x]
+
+		for y := range row {
+			c := row[y].elevation
+
+			lx := int(math.Min(float64(x/p), float64(ls-1)))
+			ly := int(math.Min(float64(y/p), float64(ls-1)))
+
+			te := layer[lx][ly].elevation
+			td := 1 - float64(c)/float64(te)
+			tc := td * float64(te) * opts.smoothness
+			e := float64(c) + tc
+
+			row[y].elevation = uint8(math.Min(e, float64(maxElevation)))
+		}
+	}
+
+	return *t, nil
+}
+
+func (t *Terrain) getBaseLayer(opts ElevationOptions) (Terrain, error) {
 	if opts.smoothness > 1 || opts.smoothness < 0 {
 		return nil, errors.New("invalid smoothness value")
 	}
 
-	fmt.Printf("Generating elevation with %+v\n", opts)
+	size := len(*t)
+	fmt.Printf("Generating %dx%d base layer with %+v...\n", size, size, opts)
 
 	for x := range *t {
 		row := (*t)[x]
 
 		for y := range row {
 			r := uint8(rand.Uint64() % 256)
-			d := 1 - float64(r)/float64(waterLevel)
-			c := d * float64(waterLevel) * opts.smoothness
-			e := float64(r) + c
-
+			wd := 1 - float64(r)/float64(waterLevel)
+			wc := wd * float64(waterLevel) * math.Pow(opts.smoothness, 2)
+			e := float64(r) + wc
 			row[y].elevation = uint8((math.Min(e, float64(maxElevation))))
 		}
 	}
 
 	return *t, nil
+}
+
+func (t *Terrain) generateElevation(opts ElevationOptions) (Terrain, error) {
+	if opts.smoothness > 1 || opts.smoothness < 0 {
+		return nil, errors.New("invalid smoothness value")
+	}
+
+	passes := int(math.Max(1/lowResRatio, 1))
+	fmt.Println("Total passes: ", passes)
+
+	baseLayer, _ := t.getBaseLayer(opts)
+
+	for p := 1; p <= passes; p++ {
+		ls := float64(p) / lowResRatio
+		lt := initializeTerrain(int(ls))
+		lt, _ = lt.getBaseLayer(opts)
+		baseLayer.applyLayer(lt, ElevationOptions{smoothness: math.Pow(opts.smoothness, 8)})
+	}
+
+	return baseLayer, nil
 }
 
 func generateTerrain(size int) (Terrain, error) {
@@ -68,7 +121,7 @@ func generateTerrain(size int) (Terrain, error) {
 	fmt.Printf("Generating %dx%d terrain map...\n", size, size)
 
 	terrain := initializeTerrain(size)
-	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: 0.5})
+	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: 0.75})
 	if err != nil {
 		return nil, err
 	}
