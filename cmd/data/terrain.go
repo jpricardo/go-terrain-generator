@@ -15,8 +15,8 @@ type Point struct {
 }
 
 const (
-	minSize    = 16
-	maxSize    = 2048
+	minSize    = 32
+	maxSize    = 8192
 	waterLevel = uint8(64)
 	outputDir  = "./cmd/output/"
 )
@@ -47,7 +47,7 @@ func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 	var texture Texture
 	textures := []Texture{}
 	et, _ := texture.WhiteNoise(TextureOptions{size: len(*t), smoothness: 1, baseLine: waterLevel})
-	passes := int(math.Pow(2, 3))
+	passes := int(math.Pow(2, 5))
 	for p := range passes {
 		ts := math.Max(float64(len(*t))/math.Pow(2, float64(passes-p)), 1)
 
@@ -90,7 +90,7 @@ func GenerateTerrain(size int) (Terrain, error) {
 
 	var terrain Terrain
 	terrain = terrain.New(size)
-	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .75})
+	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .5})
 	if err != nil {
 		return nil, err
 	}

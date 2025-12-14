@@ -13,7 +13,7 @@ const (
 )
 
 func main() {
-	size := 2048
+	size := 4096
 
 	terrain, err := data.GenerateTerrain(size)
 	if err != nil {
