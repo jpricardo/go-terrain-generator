@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"fmt"
@@ -8,11 +8,7 @@ import (
 	"os"
 )
 
-const (
-	outputDir = "./cmd/output/"
-)
-
-func saveBmp(img *image.Gray, fileName string) {
+func SaveBmp(img *image.Gray, outputDir string, fileName string) {
 	f, err := os.Create(fmt.Sprintf("%s%s", outputDir, fileName))
 	if err != nil {
 		log.Panic(err)

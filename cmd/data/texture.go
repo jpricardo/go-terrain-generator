@@ -1,8 +1,9 @@
-package main
+package data
 
 import (
 	"errors"
 	"fmt"
+	"go-terrain-generator/cmd/helpers"
 	"image"
 	"math"
 	"math/rand/v2"
@@ -17,7 +18,7 @@ type TextureOptions struct {
 
 type Texture [][]uint8
 
-func (t *Texture) whiteNoise(opts TextureOptions) (Texture, error) {
+func (t *Texture) WhiteNoise(opts TextureOptions) (Texture, error) {
 	if opts.smoothness > 1 || opts.smoothness < 0 {
 		return nil, errors.New("invalid smoothness value")
 	}
@@ -35,11 +36,40 @@ func (t *Texture) whiteNoise(opts TextureOptions) (Texture, error) {
 			wc := wd * float64(opts.baseLine) * math.Pow(opts.smoothness, 2)
 			e := float64(r) + wc
 
-			texture[x][y] = uint8(math.Min(e, float64(maxElevation)))
+			texture[x][y] = uint8(e)
 		}
 	}
 
 	return texture, nil
+}
+
+func (t *Texture) ValueNoise(opts TextureOptions) (Texture, error) {
+	if opts.smoothness > 1 || opts.smoothness < 0 {
+		return nil, errors.New("invalid smoothness value")
+	}
+
+	fmt.Printf("[TEXTURE] Generating %dx%d value noise texture with %+v...\n", opts.size, opts.size, opts)
+
+	texture := Texture{}
+	for x := range opts.size {
+		texture = append(texture, make([]uint8, opts.size))
+
+		for y := range opts.size {
+			r := (helpers.HashInt(x) + helpers.HashInt(y)) / 2
+			wd := 1 - float64(r)/float64(opts.baseLine)
+			wc := wd * float64(opts.baseLine) * math.Pow(opts.smoothness, 2)
+			e := float64(r) + wc
+
+			texture[x][y] = uint8(e)
+		}
+	}
+
+	return texture, nil
+}
+
+func (t *Texture) PerlinNoise(opts TextureOptions) (Texture, error) {
+
+	return nil, nil
 }
 
 type MergeOptions struct {
@@ -47,14 +77,16 @@ type MergeOptions struct {
 	opacity    float64
 }
 
-func (t *Texture) merge(textures []Texture, opts MergeOptions) (Texture, error) {
+func (t *Texture) Merge(textures []Texture, opts MergeOptions) (Texture, error) {
 	slices.SortFunc(textures, func(i, j Texture) int {
-		return len(i) - len(j)
+		return len(j) - len(i)
 	})
 
 	if len(textures[0]) > len(*t) {
 		return nil, errors.New("merged textures should be smaller than the target texture")
 	}
+
+	fmt.Printf("[TEXTURE] Merging %d textures with %+v\n", len(textures), opts)
 
 	for _, texture := range textures {
 		ts := len(texture)
@@ -69,7 +101,7 @@ func (t *Texture) merge(textures []Texture, opts MergeOptions) (Texture, error) 
 
 				v := texture[tx][ty]
 				d := 1 - float64(c)/float64(v)
-				vc := d * float64(v) * opts.smoothness * opts.opacity
+				vc := d * float64(v) * opts.opacity * opts.smoothness
 				nv := uint8(float64(c) + vc)
 
 				(*t)[x][y] = nv
@@ -85,7 +117,7 @@ type ApplyOptions struct {
 	opacity    float64
 }
 
-func (t *Texture) toBitmap() *image.Gray {
+func (t *Texture) ToBitmap() *image.Gray {
 	size := len(*t)
 	img := image.NewGray(image.Rect(0, 0, size, size))
 

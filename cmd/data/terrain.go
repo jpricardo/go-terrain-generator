@@ -1,8 +1,9 @@
-package main
+package data
 
 import (
 	"errors"
 	"fmt"
+	"go-terrain-generator/cmd/helpers"
 	"image"
 	"math"
 )
@@ -14,12 +15,13 @@ type Point struct {
 }
 
 const (
-	waterLevel   = uint8(64)
-	maxElevation = uint8(255)
-	lowResRatio  = float64(0.125)
+	minSize    = 16
+	maxSize    = 2048
+	waterLevel = uint8(64)
+	outputDir  = "./cmd/output/"
 )
 
-func (t *Terrain) new(size int) Terrain {
+func (t *Terrain) New(size int) Terrain {
 	var terrain Terrain
 
 	for x := range size {
@@ -37,37 +39,55 @@ type ElevationOptions struct {
 	smoothness float64
 }
 
-func (t *Terrain) generateElevation(opts ElevationOptions) (Terrain, error) {
+func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 	if opts.smoothness > 1 || opts.smoothness < 0 {
 		return nil, errors.New("invalid smoothness value")
 	}
 
 	var texture Texture
-	et, _ := texture.whiteNoise(TextureOptions{size: len(*t), smoothness: opts.smoothness, baseLine: waterLevel})
-	passes := int(math.Max(1/lowResRatio, 1))
-	for p := 1; p <= passes; p++ {
-		ls := float64(p) / lowResRatio
-		nt, _ := texture.whiteNoise(TextureOptions{size: int(ls), smoothness: opts.smoothness, baseLine: waterLevel})
-		et, _ = et.merge([]Texture{nt}, MergeOptions{smoothness: math.Pow(opts.smoothness, float64(p/passes)), opacity: math.Pow(.25, float64(passes/p))})
+	textures := []Texture{}
+	et, _ := texture.WhiteNoise(TextureOptions{size: len(*t), smoothness: 1, baseLine: waterLevel})
+	passes := int(math.Pow(2, 3))
+	for p := range passes {
+		ts := math.Max(float64(len(*t))/math.Pow(2, float64(passes-p)), 1)
 
-		img := et.toBitmap()
-		saveBmp(img, fmt.Sprintf("elevation_texture_%d.png", p))
+		if ts < minSize {
+			continue
+		}
+
+		nt, _ := texture.ValueNoise(TextureOptions{
+			size:       int(ts),
+			smoothness: math.Pow(opts.smoothness, 1),
+			baseLine:   waterLevel,
+		})
+
+		img := nt.ToBitmap()
+		helpers.SaveBmp(img, outputDir, fmt.Sprintf("elevation_texture_%d.png", p))
+
+		textures = append(textures, nt)
 	}
 
-	nt, _ := t.applyElevation(et, ApplyOptions{smoothness: opts.smoothness, opacity: opts.smoothness})
+	mt, _ := et.Merge(textures, MergeOptions{
+		opacity:    0.4,
+		smoothness: math.Pow(opts.smoothness, -2),
+	})
+	nt, _ := t.ApplyElevation(mt, ApplyOptions{
+		smoothness: opts.smoothness,
+		opacity:    1},
+	)
 	return nt, nil
 }
 
-func generateTerrain(size int) (Terrain, error) {
-	if size <= 0 || size > maxSize {
+func GenerateTerrain(size int) (Terrain, error) {
+	if size <= 0 || size > maxSize || size < minSize {
 		return nil, errors.New("invalid map size")
 	}
 
 	fmt.Printf("[TERRAIN] Generating %dx%d terrain map...\n", size, size)
 
 	var terrain Terrain
-	terrain = terrain.new(size)
-	terrain, err := terrain.generateElevation(ElevationOptions{smoothness: .5})
+	terrain = terrain.New(size)
+	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .5})
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +95,7 @@ func generateTerrain(size int) (Terrain, error) {
 	return terrain, nil
 }
 
-func (t *Terrain) applyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
+func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
 	terrainSize := len(*t)
 	textureSize := len(texture)
 
@@ -100,14 +120,14 @@ func (t *Terrain) applyElevation(texture Texture, opts ApplyOptions) (Terrain, e
 			tc := td * float64(te) * opts.smoothness * opts.opacity
 			e := float64(c) + tc
 
-			row[y].elevation = uint8(math.Min(e, float64(maxElevation)))
+			row[y].elevation = uint8(e)
 		}
 	}
 
 	return *t, nil
 }
 
-func (t *Terrain) toBitmap() *image.Gray {
+func (t *Terrain) ToBitmap() *image.Gray {
 	size := len(*t)
 	img := image.NewGray(image.Rect(0, 0, size, size))
 
