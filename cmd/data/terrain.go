@@ -60,6 +60,7 @@ func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 			smoothness: math.Pow(opts.smoothness, 1),
 			baseLine:   waterLevel,
 		})
+		nt = nt.ApplyFilters([]Filter{Contrast(float64(p) / float64(passes))})
 
 		img := nt.ToBitmap()
 		helpers.SaveBmp(img, outputDir, fmt.Sprintf("elevation_texture_%d.png", p))
@@ -68,12 +69,14 @@ func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 	}
 
 	mt, _ := et.Merge(textures, MergeOptions{
-		opacity:    0.4,
-		smoothness: math.Pow(opts.smoothness, -2),
+		opacity:    0.1,
+		smoothness: 1 - opts.smoothness,
 	})
+	mt = mt.ApplyFilters([]Filter{Contrast(1 - opts.smoothness)})
 	nt, _ := t.ApplyElevation(mt, ApplyOptions{
 		smoothness: opts.smoothness,
-		opacity:    1},
+		opacity:    1 - math.Pow(opts.smoothness, 2),
+	},
 	)
 	return nt, nil
 }
@@ -87,12 +90,17 @@ func GenerateTerrain(size int) (Terrain, error) {
 
 	var terrain Terrain
 	terrain = terrain.New(size)
-	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .5})
+	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .75})
 	if err != nil {
 		return nil, err
 	}
 
 	return terrain, nil
+}
+
+type ApplyOptions struct {
+	smoothness float64
+	opacity    float64
 }
 
 func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {

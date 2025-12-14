@@ -79,7 +79,7 @@ type MergeOptions struct {
 
 func (t *Texture) Merge(textures []Texture, opts MergeOptions) (Texture, error) {
 	slices.SortFunc(textures, func(i, j Texture) int {
-		return len(j) - len(i)
+		return len(i) - len(j)
 	})
 
 	if len(textures[0]) > len(*t) {
@@ -112,9 +112,13 @@ func (t *Texture) Merge(textures []Texture, opts MergeOptions) (Texture, error) 
 	return *t, nil
 }
 
-type ApplyOptions struct {
-	smoothness float64
-	opacity    float64
+func (t *Texture) ApplyFilters(filters []Filter) Texture {
+
+	for _, f := range filters {
+		t = f.ApplyTo(t)
+	}
+
+	return *t
 }
 
 func (t *Texture) ToBitmap() *image.Gray {
