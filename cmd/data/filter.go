@@ -44,12 +44,12 @@ func applyContrastTo(t *Texture, ammount float64) *Texture {
 			nv := v
 
 			if v > mean {
-				d := float64(1 - (v / max))
+				d := 1 - (float64(v) / float64(max))
 				c := d * ammount * (255 - float64(max))
 				nv = v + uint8(c)
 			}
 			if v < mean {
-				d := float64((v / min))
+				d := (float64(v) / float64(min))
 				c := d * ammount * -float64(min)
 				nv = v + uint8(c)
 			}

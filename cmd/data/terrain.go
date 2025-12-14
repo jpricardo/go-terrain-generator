@@ -69,7 +69,7 @@ func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 	}
 
 	mt, _ := et.Merge(textures, MergeOptions{
-		opacity:    0.1,
+		opacity:    opts.smoothness,
 		smoothness: 1 - opts.smoothness,
 	})
 	mt = mt.ApplyFilters([]Filter{Contrast(1 - opts.smoothness)})
