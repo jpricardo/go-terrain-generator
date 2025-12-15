@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"go-terrain-generator/cmd/data"
 	"go-terrain-generator/cmd/helpers"
 	"log"
 )
@@ -13,9 +12,10 @@ const (
 )
 
 func main() {
-	size := 4096
+	size := 2048
+	smoothness := 0.75
 
-	terrain, err := data.GenerateTerrain(size)
+	terrain, err := GenerateTerrain(TerrainOptions{size: size, smoothness: smoothness})
 	if err != nil {
 		log.Panic(err)
 	}

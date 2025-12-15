@@ -10,9 +10,9 @@ type Filter struct {
 	radius  int
 }
 
-func Contrast(ammount float64) Filter {
+func Contrast(ammount float64) *Filter {
 
-	return Filter{name: "contrast", ammount: ammount}
+	return &Filter{name: "contrast", ammount: ammount}
 }
 
 func applyContrastTo(t *Texture, ammount float64) *Texture {
@@ -61,9 +61,9 @@ func applyContrastTo(t *Texture, ammount float64) *Texture {
 	return t
 }
 
-func Blur(ammount float64, radius int) Filter {
+func Blur(ammount float64, radius int) *Filter {
 
-	return Filter{name: "blur", ammount: ammount, radius: radius}
+	return &Filter{name: "blur", ammount: ammount, radius: radius}
 }
 
 func applyBlurTo(t *Texture, ammount float64, radius int) *Texture {

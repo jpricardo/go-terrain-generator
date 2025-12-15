@@ -3,7 +3,6 @@ package data
 import (
 	"errors"
 	"fmt"
-	"go-terrain-generator/cmd/helpers"
 	"image"
 	"math"
 )
@@ -15,73 +14,32 @@ type Point struct {
 }
 
 const (
-	minSize    = 32
-	maxSize    = 8192
-	waterLevel = uint8(64)
-	outputDir  = "./cmd/output/"
+	MinSize    = 32
+	MaxSize    = 8192
+	WaterLevel = uint8(64)
 )
 
-func (t *Terrain) New(size int) Terrain {
+func NewTerrain(size int) *Terrain {
 	var terrain Terrain
 
 	for x := range size {
 		terrain = append(terrain, make([]*Point, size))
 
 		for y := range size {
-			terrain[x][y] = &Point{elevation: waterLevel}
+			terrain[x][y] = &Point{elevation: WaterLevel}
 		}
 	}
 
-	return terrain
-}
-
-type ElevationOptions struct {
-	smoothness float64
-}
-
-func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
-	if opts.smoothness > 1 || opts.smoothness < 0 {
-		return nil, errors.New("invalid smoothness value")
-	}
-
-	passes := 4
-	scale := (1 - opts.smoothness) * minSize / float64(len(*t))
-	nt := PerlinNoise(PerlinNoiseOptions{
-		size:   len(*t),
-		scale:  scale,
-		passes: passes,
-	})
-
-	img := nt.ToBitmap()
-	helpers.SaveBmp(img, outputDir, "elevation_texture.png")
-
-	return t.ApplyElevation(nt, ApplyOptions{opacity: 0.5 - (0.25 * opts.smoothness)})
-}
-
-func GenerateTerrain(size int) (Terrain, error) {
-	if size <= 0 || size > maxSize || size < minSize {
-		return nil, errors.New("invalid map size")
-	}
-
-	fmt.Printf("[TERRAIN] Generating %dx%d terrain map...\n", size, size)
-
-	var terrain Terrain
-	terrain = terrain.New(size)
-	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: 0.25})
-	if err != nil {
-		return nil, err
-	}
-
-	return terrain, nil
+	return &terrain
 }
 
 type ApplyOptions struct {
-	opacity float64
+	Opacity float64
 }
 
-func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
+func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain, error) {
 	terrainSize := len(*t)
-	textureSize := len(texture)
+	textureSize := len(*texture)
 
 	if textureSize <= 0 {
 		return nil, errors.New("invalid texture size")
@@ -99,16 +57,16 @@ func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, e
 			lx := int(math.Min(float64(x/p), float64(textureSize-1)))
 			ly := int(math.Min(float64(y/p), float64(textureSize-1)))
 
-			te := texture[lx][ly]
+			te := (*texture)[lx][ly]
 			td := 1 - float64(c)/float64(te)
-			tc := td * float64(te) * opts.opacity
+			tc := td * float64(te) * opts.Opacity
 			e := float64(c) + tc
 
 			row[y].elevation = uint8(e)
 		}
 	}
 
-	return *t, nil
+	return t, nil
 }
 
 func (t *Terrain) ToBitmap() *image.Gray {
