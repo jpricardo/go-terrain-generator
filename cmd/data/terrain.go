@@ -44,41 +44,18 @@ func (t *Terrain) GenerateElevation(opts ElevationOptions) (Terrain, error) {
 		return nil, errors.New("invalid smoothness value")
 	}
 
-	var texture Texture
-	textures := []Texture{}
-	et, _ := texture.WhiteNoise(TextureOptions{size: len(*t), smoothness: 1, baseLine: waterLevel})
-	passes := int(math.Pow(2, 5))
-	for p := range passes {
-		ts := math.Max(float64(len(*t))/math.Pow(2, float64(passes-p)), 1)
-
-		if ts < minSize {
-			continue
-		}
-
-		nt, _ := texture.ValueNoise(TextureOptions{
-			size:       int(ts),
-			smoothness: math.Pow(opts.smoothness, 1),
-			baseLine:   waterLevel,
-		})
-		nt = nt.ApplyFilters([]Filter{Contrast(float64(p) / float64(passes))})
-
-		img := nt.ToBitmap()
-		helpers.SaveBmp(img, outputDir, fmt.Sprintf("elevation_texture_%d.png", p))
-
-		textures = append(textures, nt)
-	}
-
-	mt, _ := et.Merge(textures, MergeOptions{
-		opacity:    opts.smoothness,
-		smoothness: 1 - opts.smoothness,
+	passes := 4
+	scale := (1 - opts.smoothness) * minSize / float64(len(*t))
+	nt := PerlinNoise(PerlinNoiseOptions{
+		size:   len(*t),
+		scale:  scale,
+		passes: passes,
 	})
-	mt = mt.ApplyFilters([]Filter{Contrast(1 - opts.smoothness)})
-	nt, _ := t.ApplyElevation(mt, ApplyOptions{
-		smoothness: opts.smoothness,
-		opacity:    1 - math.Pow(opts.smoothness, 2),
-	},
-	)
-	return nt, nil
+
+	img := nt.ToBitmap()
+	helpers.SaveBmp(img, outputDir, "elevation_texture.png")
+
+	return t.ApplyElevation(nt, ApplyOptions{opacity: 0.5 - (0.25 * opts.smoothness)})
 }
 
 func GenerateTerrain(size int) (Terrain, error) {
@@ -90,7 +67,7 @@ func GenerateTerrain(size int) (Terrain, error) {
 
 	var terrain Terrain
 	terrain = terrain.New(size)
-	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: .5})
+	terrain, err := terrain.GenerateElevation(ElevationOptions{smoothness: 0.25})
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +76,7 @@ func GenerateTerrain(size int) (Terrain, error) {
 }
 
 type ApplyOptions struct {
-	smoothness float64
-	opacity    float64
+	opacity float64
 }
 
 func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, error) {
@@ -125,7 +101,7 @@ func (t *Terrain) ApplyElevation(texture Texture, opts ApplyOptions) (Terrain, e
 
 			te := texture[lx][ly]
 			td := 1 - float64(c)/float64(te)
-			tc := td * float64(te) * opts.smoothness * opts.opacity
+			tc := td * float64(te) * opts.opacity
 			e := float64(c) + tc
 
 			row[y].elevation = uint8(e)
