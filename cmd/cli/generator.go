@@ -30,6 +30,11 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 		return nil, err
 	}
 
+	t, err = t.ApplyMaterials()
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 

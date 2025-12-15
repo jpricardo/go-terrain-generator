@@ -8,7 +8,7 @@ import (
 
 const (
 	outputDir      = "./cmd/output/"
-	outputFileName = "output_grayscale.png"
+	outputFileName = "output.png"
 )
 
 func main() {

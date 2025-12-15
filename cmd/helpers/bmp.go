@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func SaveBmp(img *image.Gray, outputDir string, fileName string) {
+func SaveBmp(img image.Image, outputDir string, fileName string) {
 	f, err := os.Create(fmt.Sprintf("%s%s", outputDir, fileName))
 	if err != nil {
 		log.Panic(err)

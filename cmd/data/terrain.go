@@ -3,7 +3,9 @@ package data
 import (
 	"errors"
 	"fmt"
+	"go-terrain-generator/cmd/helpers"
 	"image"
+	"image/color"
 	"math"
 )
 
@@ -11,12 +13,16 @@ type Terrain [][]*Point
 
 type Point struct {
 	elevation uint8
+	material  *Material
 }
 
 const (
-	MinSize    = 32
-	MaxSize    = 8192
-	WaterLevel = uint8(64)
+	MinSize     = 32
+	MaxSize     = 8192
+	WaterLevel  = uint8(0)
+	GroundLevel = uint8(64)
+	SnowLevel   = uint8(96)
+	UpperLimit  = uint8(255)
 )
 
 func NewTerrain(size int) *Terrain {
@@ -26,7 +32,7 @@ func NewTerrain(size int) *Terrain {
 		terrain = append(terrain, make([]*Point, size))
 
 		for y := range size {
-			terrain[x][y] = &Point{elevation: WaterLevel}
+			terrain[x][y] = &Point{elevation: GroundLevel - GroundLevel/4}
 		}
 	}
 
@@ -69,14 +75,61 @@ func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain,
 	return t, nil
 }
 
-func (t *Terrain) ToBitmap() *image.Gray {
+func (t *Terrain) ApplyMaterials() (*Terrain, error) {
+	terrainSize := len(*t)
+
+	for x := range terrainSize {
+		row := (*t)[x]
+
+		for y := range row {
+			e := row[y].elevation
+
+			if e <= GroundLevel {
+				row[y].material = Water()
+				continue
+			}
+
+			if e > SnowLevel {
+				row[y].material = Snow()
+				continue
+			}
+
+			if e > GroundLevel+(SnowLevel-GroundLevel)*3/4 {
+				row[y].material = Stone()
+				continue
+			}
+
+			if e < GroundLevel+4 {
+				row[y].material = Sand()
+				continue
+			}
+
+			row[y].material = Grass()
+		}
+	}
+
+	return t, nil
+}
+
+func (t *Terrain) ToBitmap() *image.RGBA {
 	size := len(*t)
-	img := image.NewGray(image.Rect(0, 0, size, size))
+	img := image.NewRGBA(image.Rect(0, 0, size, size))
 
 	for y := range size {
 		for x := range size {
-			offset := (y * img.Stride) + x
-			img.Pix[offset] = (*t)[y][x].elevation
+			point := (*t)[y][x]
+			c := point.material.color
+			a := point.elevation
+			e := color.RGBA{
+				R: a,
+				G: a,
+				B: a,
+				A: 255,
+			}
+			c = color.RGBA(helpers.MergeColors(c, e))
+
+			img.Set(x, y, c)
+
 		}
 	}
 
