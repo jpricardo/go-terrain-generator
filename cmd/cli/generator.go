@@ -19,8 +19,6 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 		return nil, errors.New("invalid map size")
 	}
 
-	fmt.Printf("[TERRAIN] Generating terrain map with %+v...\n", opts)
-
 	t := data.NewTerrain(opts.size)
 
 	chunkSize := data.MinSize

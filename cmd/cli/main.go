@@ -17,6 +17,8 @@ func main() {
 	smoothness := 0.75
 	seed := uint64(time.Now().Unix())
 
+	fmt.Println("Generating terrain map ...")
+
 	terrain, err := GenerateTerrain(TerrainOptions{seed: seed, size: size, smoothness: smoothness})
 	if err != nil {
 		log.Panic(err)

@@ -1,9 +1,5 @@
 package data
 
-import (
-	"fmt"
-)
-
 type Filter struct {
 	name    string
 	ammount float64
@@ -103,7 +99,6 @@ func applyBlurTo(t *Texture, ammount float64, radius int) *Texture {
 }
 
 func (f *Filter) ApplyTo(t *Texture) *Texture {
-	fmt.Printf("[FILTER] Applying filter %+v ...\n", *f)
 
 	switch f.name {
 	case "contrast":

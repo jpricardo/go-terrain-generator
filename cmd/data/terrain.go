@@ -2,7 +2,6 @@ package data
 
 import (
 	"errors"
-	"fmt"
 	"go-terrain-generator/cmd/helpers"
 	"image"
 	"image/color"
@@ -65,8 +64,6 @@ func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain,
 	if textureSize <= 0 {
 		return nil, errors.New("invalid texture size")
 	}
-
-	fmt.Printf("[TEXTURE] Applying %dx%d elevation texture to %dx%d terrain...\n", textureSize, textureSize, terrainSize, terrainSize)
 
 	p := terrainSize / textureSize
 	for x := range terrainSize {

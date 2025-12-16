@@ -2,7 +2,6 @@ package data
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"slices"
 )
@@ -17,8 +16,6 @@ func (t *Texture) Merge(textures []Texture, opts MergeOptions) (*Texture, error)
 	slices.SortFunc(textures, func(i, j Texture) int {
 		return len(i) - len(j)
 	})
-
-	fmt.Printf("[TEXTURE] Merging %d textures with %+v\n", len(textures), opts)
 
 	max := int(0)
 
