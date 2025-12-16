@@ -8,6 +8,48 @@ import (
 	"log"
 )
 
+type ChunkOptions struct {
+	x          int
+	y          int
+	seed       uint64
+	size       int
+	smoothness float64
+}
+
+func GenerateChunk(ch chan *data.Chunk, opts ChunkOptions) {
+	cx := opts.x * opts.size
+	cy := opts.y * opts.size
+
+	c := data.NewChunk(cx, cy, opts.size)
+	ct := c.Terrain
+
+	et, err := GenerateElevation(ElevationOptions{
+		x:          cx,
+		y:          cy,
+		seed:       opts.seed,
+		smoothness: opts.smoothness,
+		size:       opts.size,
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	ct, err = ct.ApplyElevation(et, data.ApplyOptions{Opacity: 1})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	ct, err = ct.ApplyMaterials()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	img := ct.ToBitmap()
+	helpers.SaveBmp(img, outputDir, fmt.Sprintf("chunk_%d_%d.png", opts.x, opts.y))
+
+	ch <- c
+}
+
 type TerrainOptions struct {
 	seed       uint64
 	size       int
@@ -27,38 +69,13 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 
 	for x := range chunks {
 		for y := range chunks {
-			go func() {
-				cx := x * chunkSize
-				cy := y * chunkSize
-				c := data.NewChunk(cx, cy, chunkSize)
-				ct := c.Terrain
-
-				et, err := GenerateElevation(ElevationOptions{
-					x:          cx,
-					y:          cy,
-					seed:       opts.seed,
-					smoothness: opts.smoothness,
-					size:       chunkSize,
-				})
-				if err != nil {
-					log.Panic(err)
-				}
-
-				ct, err = ct.ApplyElevation(et, data.ApplyOptions{Opacity: 1})
-				if err != nil {
-					log.Panic(err)
-				}
-
-				ct, err = ct.ApplyMaterials()
-				if err != nil {
-					log.Panic(err)
-				}
-
-				img := ct.ToBitmap()
-				helpers.SaveBmp(img, outputDir, fmt.Sprintf("chunk_%d_%d.png", x, y))
-
-				ch <- c
-			}()
+			go GenerateChunk(ch, ChunkOptions{
+				x:          x,
+				y:          y,
+				seed:       opts.seed,
+				smoothness: opts.smoothness,
+				size:       chunkSize,
+			})
 		}
 	}
 
