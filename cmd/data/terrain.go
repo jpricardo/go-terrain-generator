@@ -20,8 +20,8 @@ const (
 	MinSize     = 32
 	MaxSize     = 8192
 	WaterLevel  = uint8(0)
-	GroundLevel = uint8(64)
-	SnowLevel   = uint8(96)
+	GroundLevel = uint8(96)
+	SnowLevel   = uint8(192)
 	UpperLimit  = uint8(255)
 )
 
@@ -78,6 +78,9 @@ func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain,
 func (t *Terrain) ApplyMaterials() (*Terrain, error) {
 	terrainSize := len(*t)
 
+	grassLevel := GroundLevel + 8
+	stoneLevel := SnowLevel - (SnowLevel-GroundLevel)/3
+
 	for x := range terrainSize {
 		row := (*t)[x]
 
@@ -94,12 +97,12 @@ func (t *Terrain) ApplyMaterials() (*Terrain, error) {
 				continue
 			}
 
-			if e > GroundLevel+(SnowLevel-GroundLevel)*3/4 {
+			if e > stoneLevel {
 				row[y].material = Stone()
 				continue
 			}
 
-			if e < GroundLevel+4 {
+			if e < grassLevel {
 				row[y].material = Sand()
 				continue
 			}
@@ -126,7 +129,7 @@ func (t *Terrain) ToBitmap() *image.RGBA {
 				B: a,
 				A: 255,
 			}
-			c = color.RGBA(helpers.MergeColors(c, e))
+			c = color.RGBA(helpers.MergeColors(c, e, 0.5))
 
 			img.Set(x, y, c)
 

@@ -25,7 +25,7 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 		return nil, err
 	}
 
-	t, err = t.ApplyElevation(et, data.ApplyOptions{Opacity: 0.5 - (0.25 * opts.smoothness)})
+	t, err = t.ApplyElevation(et, data.ApplyOptions{Opacity: 1})
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +48,8 @@ func GenerateElevation(opts ElevationOptions) (*data.Texture, error) {
 		return nil, errors.New("invalid smoothness value")
 	}
 
-	passes := int(4 / opts.smoothness)
-	scale := (1 - opts.smoothness) * data.MinSize / float64(opts.size)
+	passes := 8
+	scale := 0.005 * (1 - opts.smoothness)
 	nt := data.PerlinNoise(data.PerlinNoiseOptions{
 		Size:   opts.size,
 		Scale:  scale,
