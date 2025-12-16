@@ -91,7 +91,7 @@ func (t *Terrain) ApplyMaterials() (*Terrain, error) {
 	terrainSize := len(*t)
 
 	grassLevel := GroundLevel + 8
-	stoneLevel := SnowLevel - (SnowLevel-GroundLevel)/3
+	stoneLevel := SnowLevel - (SnowLevel-GroundLevel)/2
 
 	for x := range terrainSize {
 		row := (*t)[x]

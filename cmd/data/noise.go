@@ -67,16 +67,21 @@ func PerlinNoise(opts PerlinNoiseOptions) *Texture {
 			ty := y + opts.Y
 
 			var noiseSum float64
-			amplitude := 1.0
-			frequency := opts.Scale
+			amplitude := 16.0 * opts.Scale
+			frequency := 0.0002 * (1 - opts.Scale)
 			maxValue := 0.0
 
 			for i := 0; i < opts.Passes; i++ {
 				noiseSum += p.getNoise(float64(tx)*frequency, float64(ty)*frequency) * amplitude
 				maxValue += amplitude
 
-				amplitude *= 0.25
-				frequency *= 4 + math.Pow(0.9, float64(i))
+				if i == 0 {
+					amplitude = 2
+					frequency = opts.Scale
+				} else {
+					amplitude *= 0.25
+					frequency *= 4
+				}
 			}
 
 			normalized := (noiseSum/maxValue + 1.0) / 2.0

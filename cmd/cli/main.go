@@ -13,7 +13,7 @@ const (
 )
 
 func main() {
-	size := 2048
+	size := 512
 	smoothness := 0.75
 	seed := uint64(time.Now().Unix())
 

@@ -104,7 +104,7 @@ func GenerateElevation(opts ElevationOptions) (*data.Texture, error) {
 	}
 
 	passes := 8
-	scale := 0.005 * (1 - opts.smoothness)
+	scale := 0.01 * (1 - opts.smoothness)
 	nt := data.PerlinNoise(data.PerlinNoiseOptions{
 		X:      opts.x,
 		Y:      opts.y,
