@@ -50,21 +50,26 @@ type Perlin struct {
 }
 
 type PerlinNoiseOptions struct {
+	X      int
+	Y      int
+	Seed   uint64
 	Size   int
 	Scale  float64
 	Passes int
 }
 
 func PerlinNoise(opts PerlinNoiseOptions) *Texture {
-	p := newPerlin()
+	p := newPerlin(opts.Seed)
 	t := Texture{}
 
 	fmt.Printf("[TEXTURE] Generating Perlin noise texture with %+v...\n", opts)
 
 	for x := range opts.Size {
+		tx := x + opts.X
 		t = append(t, make([]uint8, opts.Size))
 
 		for y := range opts.Size {
+			ty := y + opts.Y
 
 			var noiseSum float64
 			amplitude := 1.0
@@ -72,7 +77,7 @@ func PerlinNoise(opts PerlinNoiseOptions) *Texture {
 			maxValue := 0.0
 
 			for i := 0; i < opts.Passes; i++ {
-				noiseSum += p.getNoise(float64(x)*frequency, float64(y)*frequency) * amplitude
+				noiseSum += p.getNoise(float64(tx)*frequency, float64(ty)*frequency) * amplitude
 				maxValue += amplitude
 
 				amplitude *= 0.25
@@ -88,9 +93,9 @@ func PerlinNoise(opts PerlinNoiseOptions) *Texture {
 	return &t
 }
 
-func newPerlin() *Perlin {
+func newPerlin(seed uint64) *Perlin {
 	p := &Perlin{}
-	// r := rand.New(rand.Source(seed))
+	r := rand.New(rand.NewPCG(seed, 0))
 
 	// Preenche a primeira metade com 0..255
 	var perm [256]int
@@ -100,7 +105,7 @@ func newPerlin() *Perlin {
 
 	// Embaralha
 	for i := 0; i < 256; i++ {
-		swap := uint8(rand.Uint64()%255) + 1
+		swap := uint8(r.Uint64()%255) + 1
 		perm[i], perm[swap] = perm[swap], perm[i]
 	}
 

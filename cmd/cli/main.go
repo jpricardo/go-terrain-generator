@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-terrain-generator/cmd/helpers"
 	"log"
+	"time"
 )
 
 const (
@@ -14,8 +15,9 @@ const (
 func main() {
 	size := 2048
 	smoothness := 0.75
+	seed := uint64(time.Now().Unix())
 
-	terrain, err := GenerateTerrain(TerrainOptions{size: size, smoothness: smoothness})
+	terrain, err := GenerateTerrain(TerrainOptions{seed: seed, size: size, smoothness: smoothness})
 	if err != nil {
 		log.Panic(err)
 	}

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"go-terrain-generator/cmd/data"
 	"go-terrain-generator/cmd/helpers"
+	"log"
 )
 
 type TerrainOptions struct {
+	seed       uint64
 	size       int
 	smoothness float64
 }
@@ -20,25 +22,63 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 	fmt.Printf("[TERRAIN] Generating terrain map with %+v...\n", opts)
 
 	t := data.NewTerrain(opts.size)
-	et, err := GenerateElevation(ElevationOptions{smoothness: opts.smoothness, size: opts.size})
-	if err != nil {
-		return nil, err
+
+	chunkSize := data.MinSize
+	chunks := opts.size / chunkSize
+	ch := make(chan *data.Chunk)
+
+	for x := range chunks {
+		for y := range chunks {
+			go func() {
+				cx := x * chunkSize
+				cy := y * chunkSize
+				c := data.NewChunk(cx, cy, chunkSize)
+				ct := c.Terrain
+
+				et, err := GenerateElevation(ElevationOptions{
+					x:          cx,
+					y:          cy,
+					seed:       opts.seed,
+					smoothness: opts.smoothness,
+					size:       chunkSize,
+				})
+				if err != nil {
+					log.Panic(err)
+				}
+
+				ct, err = ct.ApplyElevation(et, data.ApplyOptions{Opacity: 1})
+				if err != nil {
+					log.Panic(err)
+				}
+
+				ct, err = ct.ApplyMaterials()
+				if err != nil {
+					log.Panic(err)
+				}
+
+				img := ct.ToBitmap()
+				helpers.SaveBmp(img, outputDir, fmt.Sprintf("chunk_%d_%d.png", x, y))
+
+				ch <- c
+			}()
+		}
 	}
 
-	t, err = t.ApplyElevation(et, data.ApplyOptions{Opacity: 1})
-	if err != nil {
-		return nil, err
+	for range chunks * chunks {
+		c := <-ch
+		t = t.ApplyChunk(c)
 	}
 
-	t, err = t.ApplyMaterials()
-	if err != nil {
-		return nil, err
-	}
+	img := t.ToBitmap()
+	helpers.SaveBmp(img, outputDir, "chunked_terrain.png")
 
 	return t, nil
 }
 
 type ElevationOptions struct {
+	seed       uint64
+	x          int
+	y          int
 	size       int
 	smoothness float64
 }
@@ -51,13 +91,13 @@ func GenerateElevation(opts ElevationOptions) (*data.Texture, error) {
 	passes := 8
 	scale := 0.005 * (1 - opts.smoothness)
 	nt := data.PerlinNoise(data.PerlinNoiseOptions{
+		X:      opts.x,
+		Y:      opts.y,
+		Seed:   opts.seed,
 		Size:   opts.size,
 		Scale:  scale,
 		Passes: passes,
 	})
-
-	img := nt.ToBitmap()
-	helpers.SaveBmp(img, outputDir, "elevation_texture.png")
 
 	return nt, nil
 }

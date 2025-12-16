@@ -10,6 +10,11 @@ import (
 )
 
 type Terrain [][]*Point
+type Chunk struct {
+	X       int
+	Y       int
+	Terrain *Terrain
+}
 
 type Point struct {
 	elevation uint8
@@ -24,6 +29,16 @@ const (
 	SnowLevel   = uint8(192)
 	UpperLimit  = uint8(255)
 )
+
+func NewChunk(x, y, size int) *Chunk {
+	chunk := Chunk{
+		X:       x,
+		Y:       y,
+		Terrain: NewTerrain(size),
+	}
+
+	return &chunk
+}
 
 func NewTerrain(size int) *Terrain {
 	var terrain Terrain
@@ -112,6 +127,21 @@ func (t *Terrain) ApplyMaterials() (*Terrain, error) {
 	}
 
 	return t, nil
+}
+
+func (t *Terrain) ApplyChunk(c *Chunk) *Terrain {
+	startX := c.X
+	startY := c.Y
+
+	ct := c.Terrain
+
+	for x := range *ct {
+		for y := range *ct {
+			(*t)[startX+x][startY+y] = (*ct)[x][y]
+		}
+	}
+
+	return t
 }
 
 func (t *Terrain) ToBitmap() *image.RGBA {
