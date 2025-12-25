@@ -13,11 +13,11 @@ const (
 )
 
 func main() {
-	size := 512
+	size := 1024
 	smoothness := 0.75
 	seed := uint64(time.Now().Unix())
 
-	fmt.Println("Generating terrain map ...")
+	fmt.Printf("Generating terrain map with seed %d\n", seed)
 
 	terrain, err := GenerateTerrain(TerrainOptions{seed: seed, size: size, smoothness: smoothness})
 	if err != nil {

@@ -84,9 +84,6 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 		t = t.ApplyChunk(c)
 	}
 
-	img := t.ToBitmap()
-	helpers.SaveBmp(img, outputDir, "chunked_terrain.png")
-
 	return t, nil
 }
 
