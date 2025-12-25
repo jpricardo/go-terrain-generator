@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"go-terrain-generator/cmd/data"
 	"go-terrain-generator/cmd/helpers"
+	"image"
+	"image/color"
 	"log"
 )
 
@@ -16,7 +17,7 @@ type ChunkOptions struct {
 	smoothness float64
 }
 
-func GenerateChunk(ch chan *data.Chunk, opts ChunkOptions) {
+func GenerateChunk(img *image.RGBA, ch chan *data.Chunk, opts ChunkOptions) {
 	cx := opts.x * opts.size
 	cy := opts.y * opts.size
 
@@ -44,8 +45,7 @@ func GenerateChunk(ch chan *data.Chunk, opts ChunkOptions) {
 		log.Panic(err)
 	}
 
-	img := ct.ToBitmap()
-	helpers.SaveBmp(img, outputDir, fmt.Sprintf("chunk_%d_%d.png", opts.x, opts.y))
+	WriteBmp(img, c)
 
 	ch <- c
 }
@@ -56,20 +56,19 @@ type TerrainOptions struct {
 	smoothness float64
 }
 
-func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
+func GenerateTerrain(opts TerrainOptions) (*image.RGBA, error) {
 	if opts.size <= 0 || opts.size > data.MaxSize || opts.size < data.MinSize {
 		return nil, errors.New("invalid map size")
 	}
 
-	t := data.NewTerrain(opts.size)
-
 	chunkSize := data.MinSize
 	chunks := opts.size / chunkSize
 	ch := make(chan *data.Chunk)
+	img := image.NewRGBA(image.Rect(0, 0, opts.size, opts.size))
 
 	for x := range chunks {
 		for y := range chunks {
-			go GenerateChunk(ch, ChunkOptions{
+			go GenerateChunk(img, ch, ChunkOptions{
 				x:          x,
 				y:          y,
 				seed:       opts.seed,
@@ -80,11 +79,10 @@ func GenerateTerrain(opts TerrainOptions) (*data.Terrain, error) {
 	}
 
 	for range chunks * chunks {
-		c := <-ch
-		t = t.ApplyChunk(c)
+		<-ch
 	}
 
-	return t, nil
+	return img, nil
 }
 
 type ElevationOptions struct {
@@ -112,4 +110,28 @@ func GenerateElevation(opts ElevationOptions) (*data.Texture, error) {
 	})
 
 	return nt, nil
+}
+
+func WriteBmp(img *image.RGBA, c *data.Chunk) {
+	size := len(*c.Terrain)
+
+	xStart := c.X
+	yStart := c.Y
+
+	for x := range size {
+		for y := range size {
+			point := (*c.Terrain)[x][y]
+			c := point.Material.Color
+			a := point.Elevation
+			e := color.RGBA{
+				R: a,
+				G: a,
+				B: a,
+				A: 255,
+			}
+			c = color.RGBA(helpers.MergeColors(c, e, 0.5))
+
+			img.Set(x+xStart, y+yStart, c)
+		}
+	}
 }

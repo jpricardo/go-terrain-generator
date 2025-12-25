@@ -16,8 +16,8 @@ type Chunk struct {
 }
 
 type Point struct {
-	elevation uint8
-	material  *Material
+	Elevation uint8
+	Material  *Material
 }
 
 const (
@@ -46,7 +46,7 @@ func NewTerrain(size int) *Terrain {
 		terrain = append(terrain, make([]*Point, size))
 
 		for y := range size {
-			terrain[x][y] = &Point{elevation: GroundLevel - GroundLevel/4}
+			terrain[x][y] = &Point{Elevation: GroundLevel - GroundLevel/4}
 		}
 	}
 
@@ -70,7 +70,7 @@ func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain,
 		row := (*t)[x]
 
 		for y := range row {
-			c := row[y].elevation
+			c := row[y].Elevation
 
 			lx := int(math.Min(float64(x/p), float64(textureSize-1)))
 			ly := int(math.Min(float64(y/p), float64(textureSize-1)))
@@ -80,7 +80,7 @@ func (t *Terrain) ApplyElevation(texture *Texture, opts ApplyOptions) (*Terrain,
 			tc := td * float64(te) * opts.Opacity
 			e := float64(c) + tc
 
-			row[y].elevation = uint8(e)
+			row[y].Elevation = uint8(e)
 		}
 	}
 
@@ -97,29 +97,29 @@ func (t *Terrain) ApplyMaterials() (*Terrain, error) {
 		row := (*t)[x]
 
 		for y := range row {
-			e := row[y].elevation
+			e := row[y].Elevation
 
 			if e <= GroundLevel {
-				row[y].material = Water()
+				row[y].Material = Water()
 				continue
 			}
 
 			if e > SnowLevel {
-				row[y].material = Snow()
+				row[y].Material = Snow()
 				continue
 			}
 
 			if e > stoneLevel {
-				row[y].material = Stone()
+				row[y].Material = Stone()
 				continue
 			}
 
 			if e < grassLevel {
-				row[y].material = Sand()
+				row[y].Material = Sand()
 				continue
 			}
 
-			row[y].material = Grass()
+			row[y].Material = Grass()
 		}
 	}
 
@@ -148,8 +148,8 @@ func (t *Terrain) ToBitmap() *image.RGBA {
 	for y := range size {
 		for x := range size {
 			point := (*t)[y][x]
-			c := point.material.color
-			a := point.elevation
+			c := point.Material.Color
+			a := point.Elevation
 			e := color.RGBA{
 				R: a,
 				G: a,

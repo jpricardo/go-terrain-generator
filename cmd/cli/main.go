@@ -19,12 +19,11 @@ func main() {
 
 	fmt.Printf("Generating terrain map with seed %d\n", seed)
 
-	terrain, err := GenerateTerrain(TerrainOptions{seed: seed, size: size, smoothness: smoothness})
+	img, err := GenerateTerrain(TerrainOptions{seed: seed, size: size, smoothness: smoothness})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	img := terrain.ToBitmap()
 	helpers.SaveBmp(img, outputDir, outputFileName)
 
 	fmt.Println("Terrain map generated succesfully!")
